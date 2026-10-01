@@ -1,7 +1,9 @@
+import { authConfig } from '@/configs/auth.js';
 import { prisma } from '@/database/prisma.js';
 import { AppError } from '@/utils/AppError.js';
 import { compare } from 'bcrypt';
 import { type Request, type Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 
 class SessionsController {
@@ -32,7 +34,15 @@ class SessionsController {
       throw new AppError('Email or Password invalid', 401);
     }
 
-    return response.json();
+    const { secret } = authConfig.jwt;
+
+    const payload = { sub: user.id, role: user.role };
+
+    const token = jwt.sign(payload, secret, { expiresIn: '1d' });
+
+    const { password: _, ...userWithoutPassword } = user;
+
+    return response.json({ token, user: userWithoutPassword });
   }
 }
 
